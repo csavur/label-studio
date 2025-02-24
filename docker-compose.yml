@@ -2,11 +2,11 @@ version: "3.9"
 services:
   nginx:
     build: .
-    image: heartexlabs/label-studio:latest
+    image: marie/label-studio:latest
     restart: unless-stopped
     ports:
-      - "8080:8085"
-      - "8081:8086"
+      - "9696:8085"
+      - "9697:8086"
     depends_on:
       - app
     environment:
@@ -26,7 +26,7 @@ services:
     stdin_open: true
     tty: true
     build: .
-    image: heartexlabs/label-studio:latest
+    image: marie/label-studio:latest
     restart: unless-stopped
     expose:
       - "8000"
@@ -42,8 +42,18 @@ services:
       - LABEL_STUDIO_HOST=${LABEL_STUDIO_HOST:-}
       - JSON_LOG=1
     #      - LOG_LEVEL=DEBUG
+      - LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true
+      - LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files
+      - LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK=true
+      - LABEL_STUDIO_USERNAME=marie
+      - LABEL_STUDIO_PASSWORD=marie123
+      # token is optional, it is generated automatically if not set
+      - LABEL_STUDIO_USER_TOKEN=d6e9ff082445aaa15c35a39e88a465c0ed26af70
+
     volumes:
       - ./mydata:/label-studio/data:rw
+      - ./scans:/label-studio/files:rw
+
     command: label-studio-uwsgi
 
   db:
@@ -62,3 +72,26 @@ services:
     volumes:
       - ${POSTGRES_DATA_DIR:-./postgres-data}:/var/lib/postgresql/data
       - ./deploy/pgsql/certs:/var/lib/postgresql/certs:ro
+
+  ls-original:
+      # build: .
+      image: heartexlabs/label-studio:1.15.0
+      restart: unless-stopped
+      ports:
+        - "9698:8085"
+        - "9699:8086"
+      depends_on:
+        - app
+      environment:
+        - LABEL_STUDIO_HOST=${LABEL_STUDIO_HOST:-}
+      #   Optional: Specify SSL termination certificate & key
+      #   Just drop your cert.pem and cert.key into folder 'deploy/nginx/certs'
+      #      - NGINX_SSL_CERT=/certs/cert.pem
+      #      - NGINX_SSL_CERT_KEY=/certs/cert.key
+      volumes:
+        - ./mydata:/label-studio/data:rw
+        - ./deploy/nginx/certs:/certs:ro
+      #   Optional: Override nginx default conf
+      #      - ./deploy/my.conf:/etc/nginx/nginx.conf
+      command: nginx
+

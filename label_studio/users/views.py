@@ -98,6 +98,7 @@ def user_login(request):
     user = request.user
     next_page = request.GET.get('next')
 
+    # TODO Celal: to by pass the login page for now
     # checks if the URL is a safe redirection.
     if not next_page or not url_has_allowed_host_and_scheme(url=next_page, allowed_hosts=request.get_host()):
         next_page = reverse('projects:project-index')
@@ -107,6 +108,15 @@ def user_login(request):
 
     if user.is_authenticated:
         return redirect(next_page)
+    else:
+        email = 'marie@intel.com'
+        user = auth.get_user_model().objects.get(email=email)
+        
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        
+        return redirect(next_page)
+    
+    # end TODO
 
     if request.method == 'POST':
         form = login_form(request.POST)
